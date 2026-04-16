@@ -14,6 +14,8 @@ public class ScoreDisplay : MonoBehaviour
     {
         Debug.Assert(_gameManager != null, "ScoreDisplay: GameManager reference is missing. Please assign it in the Inspector.");
         Debug.Assert(_scoreText != null, "ScoreDisplay: Score text reference is missing. Please assign it in the Inspector.");
+        if (_gameManager == null) return;
+        if (_scoreText == null) return;
     }
 
     void Start()

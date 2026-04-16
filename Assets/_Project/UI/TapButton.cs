@@ -11,6 +11,7 @@ public class TapButton : MonoBehaviour
     void Awake()
     {
         Debug.Assert(_gameManager != null, "TapButton: GameManager reference is missing. Please assign it in the Inspector.");
+        if (_gameManager == null) return;
     }
 
     public void OnTapped()
