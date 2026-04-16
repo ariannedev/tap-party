@@ -17,6 +17,6 @@ public class TapButton : MonoBehaviour
     public void OnTapped()
     {
         if (_gameManager == null) return;
-        _gameManager.ScoreCounter.Increment();
+        _gameManager.OnTap();
     }
 }
