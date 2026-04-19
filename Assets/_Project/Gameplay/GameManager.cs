@@ -1,55 +1,38 @@
 // GameManager.cs
+using Unity.VisualScripting;
 using UnityEngine;
 
 /// <summary>
-/// Holds and provides access to game logic objects, acting as the composition root for the scene.
+/// Acts as composition root for the scene
+/// Creates and owns active game sessions
 /// </summary>
 public class GameManager : MonoBehaviour
 {
-    public ScoreCounter ScoreCounter { get; private set; }
-    public GameTimer GameTimer { get; private set; }
+    public IGameSession Session { get; private set; }
 
-    public bool IsGameOver { get; private set; }
+    //accessors for ui componenets
+    public ScoreCounter ScoreCounter => (Session as LocalGameSession)?.ScoreCounter;
+    public GameTimer GameTimer => (Session as LocalGameSession)?.GameTimer;
+    public PersonalBestTracker PersonalBestTracker => (Session as LocalGameSession)?.PersonalBestTracker;
 
     void Awake()
     {
-        ScoreCounter = new ScoreCounter();
-        GameTimer = new GameTimer(10f);
-
-        Debug.Assert(ScoreCounter != null, "GameManager: Failed to create ScoreCounter.");
-        Debug.Assert(GameTimer != null, "GameManager: Failed to create GameTimer.");
-
-        if (ScoreCounter == null) return;
-        if (GameTimer == null) return;
-
-        GameTimer.OnExpired += OnGameExpired;
+        Session = new LocalGameSession("Player", 5f);
+        Debug.Assert(Session != null, "GameManager: Failed to create LocalGameSession");
     }
 
     void Update()
     {
-        GameTimer.Tick(Time.deltaTime);
+        (Session as LocalGameSession)?.Tick(Time.deltaTime);
     }
 
-    //when the button is tapped incremement the score
-    //if the timer hasn't started (single player) start it
     public void OnTap()
     {
-        if (IsGameOver) return;
-
-        if (!GameTimer.IsRunning)
-        {
-            GameTimer.Start();
-        }
-        ScoreCounter.Increment();
-    }
-
-    void OnGameExpired()
-    {
-        IsGameOver = true;
+        Session.OnTap();
     }
 
     void OnDestroy()
     {
-        GameTimer.OnExpired -= OnGameExpired;
+        (Session as LocalGameSession)?.Dispose();
     }
 }
