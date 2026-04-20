@@ -19,7 +19,7 @@ public interface INetworkTransport
     event Action<INetworkMessage> OnMessageReceived;
 
     //room management
-    Task CreateRoomAsync();
+    Task CreateRoomAsync(string playerName);
     Task JoinRoomAsync(string RoomId);
     Task LeaveRoomAsync();
 

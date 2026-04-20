@@ -2,6 +2,6 @@
 
 public class FinalScoreMessage : INetworkMessage
 {
-    public string PlayerId { get; set; }
-    public int Score { get; set; }
+    public string PlayerId;
+    public int Score;
 }
