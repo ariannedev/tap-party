@@ -8,10 +8,13 @@ using UnityEngine.SceneManagement;
 public class BootstrapManager : MonoBehaviour
 {
     [SerializeField] private ServicesInitialiser _servicesInitialiser;
+    [SerializeField] private NGOTransport _transport;
 
     async void Awake()
     {
         DontDestroyOnLoad(gameObject);
+        ServiceLocator.Register(_servicesInitialiser);
+        ServiceLocator.Register(_transport);
         await WaitForServices();
         LoadGameScene();
     }

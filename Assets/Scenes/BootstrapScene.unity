@@ -193,6 +193,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BootstrapManager
   _servicesInitialiser: {fileID: 57361779}
+  _transport: {fileID: 1753210727}
 --- !u!4 &1237631635
 Transform:
   m_ObjectHideFlags: 0
