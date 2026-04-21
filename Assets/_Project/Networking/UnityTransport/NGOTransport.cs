@@ -31,7 +31,7 @@ public class NGOTransport : MonoBehaviour, INetworkTransport
 
     void Start()
     {
-        _messenger.OnMessageReceived += OnMessageReceived;
+        _messenger.OnMessageReceived += HandleMessageReceived;
     }
 
     public async Task CreateRoomAsync(string playerName)
@@ -69,17 +69,21 @@ public class NGOTransport : MonoBehaviour, INetworkTransport
         _currentLobby = lobby;
         string relayJoinCode = LobbyHelper.GetRelayJoinCode(lobby);
 
-        // Step 2 — join relay allocation
+        // Step 2 — join relay allocation and configure NGO
         JoinAllocation allocation = await RelayHelper.JoinAllocationAsync(relayJoinCode);
-
-        // Step 3 — configure NGO to use relay
         ConfigureClientRelay(allocation);
-
-        // Step 4 — start NGO client
         NetworkManager.Singleton.StartClient();
-
-        // Step 5 — register NGO callbacks
         RegisterNGOCallbacks();
+
+        // Step 3 — wait for connection to establish
+        await System.Threading.Tasks.Task.Delay(500);
+
+        // Step 4 — announce ourselves to the host
+        await SendToHostAsync(new PlayerJoinedMessage
+        {
+            PlayerId = LocalPlayerId,
+            PlayerName = NameGenerator.GetOrGenerateName()
+        });
 
         Debug.Log($"NGOTransport: Joined room {roomId}");
     }
@@ -156,6 +160,9 @@ public class NGOTransport : MonoBehaviour, INetworkTransport
     private void OnClientConnected(ulong clientId)
     {
         Debug.Log($"NGOTransport: Client connected {clientId}");
+        if (!IsHost) return;
+        // host sends current player list to all clients
+        // client will send their PlayerJoinedMessage separately
     }
 
     private void OnClientDisconnected(ulong clientId)
@@ -187,6 +194,31 @@ public class NGOTransport : MonoBehaviour, INetworkTransport
         }
         return null;
     }
+
+    private void HandleMessageReceived(INetworkMessage message)
+    {
+        if (message is PlayerJoinedMessage joinedMessage)
+        {
+            NetworkPlayer player = new NetworkPlayer
+            {
+                PlayerId = joinedMessage.PlayerId,
+                PlayerName = joinedMessage.PlayerName,
+                IsHost = false,
+                IsLocal = joinedMessage.PlayerId == LocalPlayerId
+            };
+
+            _connectedPlayers.Add(player);
+            OnPlayerJoined?.Invoke(player);
+        }
+        else if (message is PlayerLeftMessage leftMessage)
+        {
+            NetworkPlayer player = _connectedPlayers.Find(p => p.PlayerId == leftMessage.PlayerId);
+            if (player == null) return;
+            _connectedPlayers.Remove(player);
+            OnPlayerLeft?.Invoke(player);
+        }
+    }
+
 
     private void OnDestroy()
     {
