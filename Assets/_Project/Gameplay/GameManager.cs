@@ -17,9 +17,10 @@ public class GameManager : MonoBehaviour
 
     void Awake()
     {
-        string playerName = NameGenerator.GetOrGenerateName();
-        Session = new LocalGameSession("Player", 5f);
-        Debug.Assert(Session != null, "GameManager: Failed to create LocalGameSession");
+        PlayerPrefs.DeleteAll();
+        PlayerProfile.Initialise();
+        Session = new LocalGameSession(PlayerProfile.PlayerName, 30f);
+        Debug.Assert(Session != null, "GameManager: Failed to create LocalGameSession"); PlayerProfile.Initialise();
     }
 
     void Update()

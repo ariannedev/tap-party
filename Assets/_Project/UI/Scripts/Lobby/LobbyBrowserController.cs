@@ -61,7 +61,9 @@ public class LobbyBrowserController : MonoBehaviour
     private async void OnCreateGamePressed()
     {
         _createGameButton.interactable = false;
-        string playerName = NameGenerator.GetOrGenerateName();
+        _createGameButton.GetComponentInChildren<TMP_Text>().text = "Creating...";
+        string playerName = PlayerProfile.PlayerName;
+        Debug.Log($"LobbyBrowserController: Creating game with player name {PlayerProfile.PlayerName}");
         await _transport.CreateRoomAsync(playerName);
         // transition to waiting panel
         _waitingController.Show();

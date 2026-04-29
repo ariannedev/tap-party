@@ -16,23 +16,19 @@ public class NGOTransport : MonoBehaviour, INetworkTransport
     // INetworkTransport
     public bool IsHost { get; private set; }
     public string LocalPlayerId =>
-    Unity.Services.Authentication.AuthenticationService.Instance.PlayerId;
+        Unity.Services.Authentication.AuthenticationService.Instance.PlayerId;
     public IReadOnlyList<NetworkPlayer> ConnectedPlayers => _connectedPlayers;
 
-    [SerializeField] private NGOMessenger _messenger;
+    [SerializeField] private NGOMessenger _messengerPrefab;
 
     public event Action<NetworkPlayer> OnPlayerJoined;
     public event Action<NetworkPlayer> OnPlayerLeft;
     public event Action<INetworkMessage> OnMessageReceived;
 
+    private NGOMessenger _messenger;
     private readonly List<NetworkPlayer> _connectedPlayers = new List<NetworkPlayer>();
     private Lobby _currentLobby;
     private string _playerName;
-
-    void Start()
-    {
-        _messenger.OnMessageReceived += HandleMessageReceived;
-    }
 
     public async Task CreateRoomAsync(string playerName)
     {
@@ -54,7 +50,14 @@ public class NGOTransport : MonoBehaviour, INetworkTransport
         // Step 5 — register NGO callbacks
         RegisterNGOCallbacks();
 
-        // Step 6 — add ourselves to connected players
+        // Step 6 — spawn messenger and subscribe
+        GameObject messengerObj = Instantiate(_messengerPrefab.gameObject);
+        NetworkObject networkObject = messengerObj.GetComponent<NetworkObject>();
+        networkObject.Spawn();
+        _messenger = messengerObj.GetComponent<NGOMessenger>();
+        _messenger.OnMessageReceived += HandleMessageReceived;
+
+        // Step 7 — add ourselves to connected players
         AddLocalPlayer(playerName, true);
 
         Debug.Log($"NGOTransport: Room created, lobby {_currentLobby.Id}");
@@ -63,6 +66,7 @@ public class NGOTransport : MonoBehaviour, INetworkTransport
     public async Task JoinRoomAsync(string roomId)
     {
         IsHost = false;
+        _playerName = PlayerProfile.PlayerName;
 
         // Step 1 — get relay join code from lobby
         Lobby lobby = await LobbyHelper.JoinLobbyAsync(roomId);
@@ -75,14 +79,21 @@ public class NGOTransport : MonoBehaviour, INetworkTransport
         NetworkManager.Singleton.StartClient();
         RegisterNGOCallbacks();
 
-        // Step 3 — wait for connection to establish
-        await System.Threading.Tasks.Task.Delay(500);
+        // Step 3 — wait for NGO to spawn the messenger
+        _messenger = null;
+        while (_messenger == null || !_messenger.IsSpawned)
+        {
+            await System.Threading.Tasks.Task.Delay(100);
+            _messenger = GameObject.FindObjectOfType<NGOMessenger>();
+        }
+        _messenger.OnMessageReceived += HandleMessageReceived;
+        Debug.Log($"JoinRoomAsync: messenger ready");
 
         // Step 4 — announce ourselves to the host
         await SendToHostAsync(new PlayerJoinedMessage
         {
             PlayerId = LocalPlayerId,
-            PlayerName = NameGenerator.GetOrGenerateName()
+            PlayerName = _playerName
         });
 
         Debug.Log($"NGOTransport: Joined room {roomId}");
@@ -94,7 +105,6 @@ public class NGOTransport : MonoBehaviour, INetworkTransport
 
         try
         {
-            //if it's the host and not the last player, pass hosting to a remaining player
             bool isLastPlayer = _currentLobby.Players.Count <= 1;
 
             if (isLastPlayer)
@@ -161,15 +171,19 @@ public class NGOTransport : MonoBehaviour, INetworkTransport
     {
         Debug.Log($"NGOTransport: Client connected {clientId}");
         if (!IsHost) return;
-        // host sends current player list to all clients
-        // client will send their PlayerJoinedMessage separately
+
+        // broadcast host info to all clients
+        _ = SendToAllAsync(new PlayerJoinedMessage
+        {
+            PlayerId = LocalPlayerId,
+            PlayerName = _playerName
+        });
     }
 
     private void OnClientDisconnected(ulong clientId)
     {
         NetworkPlayer player = _connectedPlayers.Find(p => p.PlayerId == clientId.ToString());
         if (player == null) return;
-
         _connectedPlayers.Remove(player);
         OnPlayerLeft?.Invoke(player);
     }
@@ -199,11 +213,13 @@ public class NGOTransport : MonoBehaviour, INetworkTransport
     {
         if (message is PlayerJoinedMessage joinedMessage)
         {
+            if (_connectedPlayers.Exists(p => p.PlayerId == joinedMessage.PlayerId)) return;
+
             NetworkPlayer player = new NetworkPlayer
             {
                 PlayerId = joinedMessage.PlayerId,
                 PlayerName = joinedMessage.PlayerName,
-                IsHost = false,
+                IsHost = joinedMessage.PlayerId == LocalPlayerId && IsHost,
                 IsLocal = joinedMessage.PlayerId == LocalPlayerId
             };
 
@@ -218,7 +234,6 @@ public class NGOTransport : MonoBehaviour, INetworkTransport
             OnPlayerLeft?.Invoke(player);
         }
     }
-
 
     private void OnDestroy()
     {

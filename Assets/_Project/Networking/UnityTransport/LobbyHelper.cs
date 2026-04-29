@@ -16,6 +16,7 @@ public static class LobbyHelper
     {
         try
         {
+            Debug.Log($"LobbyHelper: Creating lobby with name {hostName}");
             CreateLobbyOptions options = new CreateLobbyOptions
             {
                 IsPrivate = false,

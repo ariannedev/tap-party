@@ -285,6 +285,7 @@ GameObject:
   - component: {fileID: 6146541433134989981}
   - component: {fileID: 2669827713926621417}
   - component: {fileID: 2800824054573176655}
+  - component: {fileID: 2313851202880561589}
   m_Layer: 5
   m_Name: GameListItem
   m_TagString: Untagged
@@ -352,6 +353,22 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!114 &2313851202880561589
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3670732475292376085}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 51d53517d92244cf8879ad3a8471f1aa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GameListItem
+  _hostName: {fileID: 604662474032529783}
+  _playerCount: {fileID: 7684528255213934716}
+  _joinButton: {fileID: 9113494787079937049}
+  _background: {fileID: 2800824054573176655}
 --- !u!1 &3965723574024898584
 GameObject:
   m_ObjectHideFlags: 0
